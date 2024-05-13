@@ -1,34 +1,38 @@
 #include <jni.h>
 #include <string>
 #include <android/log.h>
-#include "Recorder.h"
+#include "Karaoke.h"
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_karaokeapp_RecorderService_Recorder(JNIEnv *env, jobject thiz, jint samplerate,
-                                                     jint buffersize, jint destinationfd) {
-    recorder = new Recorder((unsigned int)samplerate, (unsigned int)buffersize, destinationfd);
+                                                     jint buffersize) {
+    karaoke = new Karaoke((unsigned int)samplerate, (unsigned int)buffersize);
 }
+
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_example_karaokeapp_RecorderService_ToggleRecorder(JNIEnv *env, jobject thiz) {
-    if (recorder) recorder->toggleRecorder();
-}
-extern "C"
-JNIEXPORT void JNICALL
-Java_com_example_karaokeapp_RecorderService_CleanUp(JNIEnv *env, jobject thiz) {
-    if (recorder)
+Java_com_example_karaokeapp_RecorderService_stopRecording(JNIEnv *env, jobject thiz) {
+    if (karaoke)
     {
-        recorder->clean();
-        delete recorder;
+        karaoke->stopRecord();
+        __android_log_print(ANDROID_LOG_DEBUG, "Karaoke", "Finished recording.");
     }
 }
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_example_karaokeapp_RecorderService_StopRecording(JNIEnv *env, jobject thiz) {
-    if (recorder)
-    {
-        recorder->stopRecord();
-        __android_log_print(ANDROID_LOG_DEBUG, "Recorder", "Finished recording.");
-    }
+Java_com_example_karaokeapp_RecorderService_setEffectEnable(JNIEnv *env, jobject thiz,
+                                                            jboolean value) {
+    if (karaoke) karaoke->setEffectEnable(value);
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_karaokeapp_RecorderService_setEffectValue(JNIEnv *env, jobject thiz,
+                                                           jint effect_type, jint value) {
+    if (karaoke) karaoke->setEffectValue(effect_type, value);
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_karaokeapp_RecorderService_setMicVolume(JNIEnv *env, jobject thiz, jfloat value) {
+    if (karaoke) karaoke->setMicVolume(value);
 }

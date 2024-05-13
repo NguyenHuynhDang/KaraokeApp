@@ -44,7 +44,6 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.ViewHolder>
         DiffUtil.DiffResult result = DiffUtil.calculateDiff(videoDiffUtil);
         videoItems = newItems;
         result.dispatchUpdatesTo(this);
-        notifyItemChanged(0);
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder

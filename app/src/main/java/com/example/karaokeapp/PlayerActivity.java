@@ -1,18 +1,24 @@
 package com.example.karaokeapp;
 
+import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -26,13 +32,13 @@ import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTube
 import java.io.FileNotFoundException;
 
 public class PlayerActivity extends AppCompatActivity {
+    boolean hasAllPermissions = false;
     private Boolean isRecording = false;
-    private ActivityResultLauncher<Intent> fileBrowserLauncher = null;
+    private RecorderService recorderService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setFileBrowserLauncher();
 
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_player);
@@ -42,6 +48,46 @@ public class PlayerActivity extends AppCompatActivity {
             return insets;
         });
 
+        // Checking permissions.
+        String[] permissions = {
+                Manifest.permission.RECORD_AUDIO,
+        };
+        for (String s : permissions) {
+            if (ContextCompat.checkSelfPermission(this, s) != PackageManager.PERMISSION_GRANTED) {
+                // Some permissions are not granted, ask the user.
+                ActivityCompat.requestPermissions(this, permissions, 0);
+                return;
+            }
+        }
+        // Got all permissions
+        hasAllPermissions = true;
+
+        setYoutubePlayer();
+        setMicButton();
+        setRecorderService();
+
+        if (hasAllPermissions)
+        {
+            isRecording = true;
+            recorderService.startRecording();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        // Called when the user answers to the permission dialogs.
+        if ((requestCode != 0) || (grantResults.length < 1) || (grantResults.length != permissions.length)) return;
+        hasAllPermissions = true;
+
+        for (int grantResult:grantResults) if (grantResult != PackageManager.PERMISSION_GRANTED) {
+            hasAllPermissions = false;
+            Toast.makeText(getApplicationContext(), "Please allow all permissions for the app.", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void setYoutubePlayer()
+    {
         String videoId = getIntent().getStringExtra("videoId");
         String videoTitle = getIntent().getStringExtra("videoTitle");
 
@@ -55,68 +101,47 @@ public class PlayerActivity extends AppCompatActivity {
                 youTubePlayer.loadVideo(videoId, 0);
             }
         });
-
+    }
+    private void setMicButton()
+    {
         ImageButton microphoneBtn = findViewById(R.id.microphoneBtn);
-        microphoneBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                isRecording = !isRecording;
-                startService("toggle");
-                if (isRecording)
-                    microphoneBtn.setImageResource(R.drawable.baseline_mic_24);
-                else
-                    microphoneBtn.setImageResource(R.drawable.baseline_mic_off_24);
+        microphoneBtn.setOnClickListener(v -> {
+            isRecording = !isRecording;
+            if (isRecording)
+            {
+                recorderService.startRecording();
+                microphoneBtn.setImageResource(R.drawable.baseline_mic_24);
             }
-        });
-
-        startRecord();
-    }
-
-    private void setFileBrowserLauncher()
-    {
-        fileBrowserLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
-            // Handle the return of the save as dialog.
-            if (result.getResultCode() == android.app.Activity.RESULT_OK) {
-                Intent resultData = result.getData();
-                if (resultData != null) {
-                    Uri u = resultData.getData();
-                    try {
-                        ParcelFileDescriptor pfd = getContentResolver().openFileDescriptor(u, "w");
-                        if (pfd != null) {
-                            Intent serviceIntent = new Intent(this, RecorderService.class);
-                            serviceIntent.putExtra("fileDescriptor", pfd.detachFd());
-                            ContextCompat.startForegroundService(this, serviceIntent);
-                            isRecording = true;
-                        } else Log.d("Recorder", "File descriptor is null.");
-                    } catch (FileNotFoundException e) {
-                        e.printStackTrace();
-                    }
-                }
+            else
+            {
+                recorderService.stopRecording();
+                microphoneBtn.setImageResource(R.drawable.baseline_mic_off_24);
             }
         });
     }
 
-    private void startRecord()
+    private void setRecorderService()
     {
-        // Open the file browser to pick a destination.
-        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType("application/octet-stream");
-        intent.putExtra(Intent.EXTRA_TITLE, "recording.wav");
-        fileBrowserLauncher.launch(intent);
-    }
+        // Get the device's sample rate and buffer size to enable
+        // low-latency Android audio output, if available.
+        String samplerateString = null, buffersizeString = null;
+        AudioManager audioManager = (AudioManager) this.getSystemService(Context.AUDIO_SERVICE);
+        if (audioManager != null) {
+            samplerateString = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE);
+            buffersizeString = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER);
+        }
+        if (samplerateString == null) samplerateString = "48000";
+        if (buffersizeString == null) buffersizeString = "480";
+        int samplerate = Integer.parseInt(samplerateString);
+        int buffersize = Integer.parseInt(buffersizeString);
 
-    private void startService(String action)
-    {
-        Intent serviceIntent = new Intent(this, RecorderService.class);
-        serviceIntent.setAction(action);
-        startService(serviceIntent);
+        recorderService = new RecorderService(samplerate, buffersize);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        startService("stop");
+        recorderService.stopRecording();
         YouTubePlayerView youTubePlayerView = findViewById(R.id.youtube_player);
         youTubePlayerView.release();
     }
