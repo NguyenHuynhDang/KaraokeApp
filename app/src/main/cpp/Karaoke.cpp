@@ -14,14 +14,24 @@ const float MIC_MAX_VOLUME = 0.005f;
 
 bool audioProcessing(void* clientData, short int* audioIO, int numFrames, int sampleRate)
 {
-    Karaoke* k = (Karaoke*) clientData;
-    return k->process(audioIO, (unsigned int)numFrames, (unsigned int)sampleRate);
+    return ((Karaoke*) clientData)->process(audioIO, (unsigned int)numFrames, (unsigned int)sampleRate);
 }
 
 Karaoke::Karaoke(unsigned int samplerate, unsigned int bufferSize)
 {
     Superpowered::Initialize("ExampleLicenseKey-WillExpire-OnNextUpdate");
-    micVolume = MIC_MAX_VOLUME;
+    isEffectEnable = true;
+
+    audioIO = new SuperpoweredAndroidAudioIO (
+            samplerate, // device sample rate
+            bufferSize, // device buffer size
+            true,   // enable input
+            true,   // enable output
+            audioProcessing,    // audio callback function
+            this,   // client data
+            SL_ANDROID_STREAM_SYSTEM,   // input stream type
+            SL_ANDROID_RECORDING_PRESET_VOICE_RECOGNITION
+            ); // output stream type
 
     echo = new Superpowered::Echo((unsigned int)samplerate);
     echo->setMix(0.0f);
@@ -30,9 +40,6 @@ Karaoke::Karaoke(unsigned int samplerate, unsigned int bufferSize)
     reverb = new Superpowered::Reverb((unsigned int)samplerate);
     reverb->mix = 0.0f;
     reverb->enabled = isEffectEnable;
-
-    audioIO = new SuperpoweredAndroidAudioIO(samplerate, bufferSize, true, true, audioProcessing,
-                                             this);
 }
 
 Karaoke::~Karaoke()
@@ -44,7 +51,7 @@ bool Karaoke::process(short int *audio, unsigned int numFrames, unsigned int sam
 {
     float floatBuffer[numFrames * 2];
     Superpowered::ShortIntToFloat(audio, floatBuffer, (unsigned int)numFrames);
-    Superpowered::ChangeVolumeAdd(floatBuffer, floatBuffer, 1.0f, micVolume, (unsigned int)numFrames);
+    //Superpowered::ChangeVolumeAdd(floatBuffer, floatBuffer, 1.0f, micVolume, (unsigned int)numFrames);
 
     if (isEffectEnable) {
         echo->process(floatBuffer, floatBuffer, (unsigned int)numFrames);
