@@ -29,7 +29,17 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_karaokeapp_RecorderService_setEffectValue(JNIEnv *env, jobject thiz,
                                                            jint effect_type, jint value) {
-    if (karaoke) karaoke->setEffectValue(effect_type, value);
+    if (karaoke)
+    {
+        switch (effect_type) {
+            case 1:
+                karaoke->setEchoValue(value);
+                return;
+            case 2:
+                karaoke->setReverbValue(value);
+                return;
+        }
+    }
 }
 extern "C"
 JNIEXPORT void JNICALL

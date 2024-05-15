@@ -19,10 +19,10 @@ private:
     Superpowered::Reverb *reverb;
 public:
     Karaoke(unsigned int samplerate, unsigned int bufferSize);
-    ~Karaoke();
     bool process(short int* output, unsigned int numFrames, unsigned int samplerate);
     void setEffectEnable(bool value);
-    void setEffectValue(int effectType, int value);
+    void setEchoValue(int value);
+    void setReverbValue(int value);
     void setMicVolume(float value);
     void stopRecord();
 };

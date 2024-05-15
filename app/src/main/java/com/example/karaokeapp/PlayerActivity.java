@@ -2,51 +2,42 @@ package com.example.karaokeapp;
 
 import android.Manifest;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
-import android.net.Uri;
 import android.os.Bundle;
-import android.os.ParcelFileDescriptor;
-import android.util.Log;
 import android.view.View;
-import android.widget.ImageButton;
+import android.widget.Switch;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.textview.MaterialTextView;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView;
 
-import java.io.FileNotFoundException;
-
 public class PlayerActivity extends AppCompatActivity {
     boolean hasAllPermissions = false;
     private Boolean isRecording = false;
     private RecorderService recorderService;
 
+    private Switch micSwitch, effectSwitch;
+    private View micView, effectView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        EdgeToEdge.enable(this);
+//        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_player);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+//        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+//            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+//            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+//            return insets;
+//        });
 
         // Checking permissions.
         String[] permissions = {
@@ -62,13 +53,18 @@ public class PlayerActivity extends AppCompatActivity {
         // Got all permissions
         hasAllPermissions = true;
 
+        setupView();
         setYoutubePlayer();
-        setMicButton();
         setRecorderService();
+        setMicSwitchClick();
+        setEffectSwitchClick();
 
         if (hasAllPermissions)
         {
             isRecording = true;
+            micSwitch.setChecked(true);
+            micView.setVisibility(View.VISIBLE);
+            effectSwitch.setVisibility(View.VISIBLE);
             recorderService.startRecording();
         }
     }
@@ -91,9 +87,6 @@ public class PlayerActivity extends AppCompatActivity {
         String videoId = getIntent().getStringExtra("videoId");
         String videoTitle = getIntent().getStringExtra("videoTitle");
 
-        MaterialTextView title = findViewById(R.id.tv_video_title);
-        title.setText(videoTitle);
-
         YouTubePlayerView youTubePlayerView = findViewById(R.id.youtube_player);
         youTubePlayerView.addYouTubePlayerListener(new AbstractYouTubePlayerListener() {
             @Override
@@ -101,21 +94,51 @@ public class PlayerActivity extends AppCompatActivity {
                 youTubePlayer.loadVideo(videoId, 0);
             }
         });
+
+        MaterialTextView title = findViewById(R.id.tv_video_title);
+        title.setText(videoTitle);
     }
-    private void setMicButton()
+
+    private void setupView()
     {
-        ImageButton microphoneBtn = findViewById(R.id.microphoneBtn);
-        microphoneBtn.setOnClickListener(v -> {
+        micSwitch = findViewById(R.id.sw_mic);
+        effectSwitch = findViewById(R.id.sw_effect);
+        micView = findViewById(R.id.view_mic);
+        effectView = findViewById(R.id.view_effect);
+    }
+
+    private void setMicSwitchClick()
+    {
+        micSwitch.setOnClickListener(v -> {
             isRecording = !isRecording;
             if (isRecording)
             {
+                micView.setVisibility(View.VISIBLE);
+                effectSwitch.setVisibility(View.VISIBLE);
                 recorderService.startRecording();
-                microphoneBtn.setImageResource(R.drawable.baseline_mic_24);
             }
             else
             {
+                micView.setVisibility(View.GONE);
+                effectSwitch.setVisibility(View.GONE);
                 recorderService.stopRecording();
-                microphoneBtn.setImageResource(R.drawable.baseline_mic_off_24);
+            }
+        });
+    }
+
+    private void setEffectSwitchClick()
+    {
+        effectSwitch.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (effectSwitch.isChecked())
+                {
+                    effectView.setVisibility(View.VISIBLE);
+                }
+                else
+                {
+                    effectView.setVisibility(View.GONE);
+                }
             }
         });
     }

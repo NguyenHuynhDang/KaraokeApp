@@ -20,7 +20,6 @@ bool audioProcessing(void* clientData, short int* audioIO, int numFrames, int sa
 Karaoke::Karaoke(unsigned int samplerate, unsigned int bufferSize)
 {
     Superpowered::Initialize("ExampleLicenseKey-WillExpire-OnNextUpdate");
-    isEffectEnable = true;
 
     audioIO = new SuperpoweredAndroidAudioIO (
             samplerate, // device sample rate
@@ -42,16 +41,11 @@ Karaoke::Karaoke(unsigned int samplerate, unsigned int bufferSize)
     reverb->enabled = isEffectEnable;
 }
 
-Karaoke::~Karaoke()
-{
-    delete karaoke;
-}
-
 bool Karaoke::process(short int *audio, unsigned int numFrames, unsigned int sampleRate)
 {
     float floatBuffer[numFrames * 2];
     Superpowered::ShortIntToFloat(audio, floatBuffer, (unsigned int)numFrames);
-    //Superpowered::ChangeVolumeAdd(floatBuffer, floatBuffer, 1.0f, micVolume, (unsigned int)numFrames);
+    Superpowered::ChangeVolumeAdd(floatBuffer, floatBuffer, 1.0f, micVolume, (unsigned int)numFrames);
 
     if (isEffectEnable) {
         echo->process(floatBuffer, floatBuffer, (unsigned int)numFrames);
@@ -68,23 +62,19 @@ void Karaoke::setEffectEnable(bool value)
     echo->enabled = reverb->enabled = value;
 }
 
-void Karaoke::setEffectValue(int effectType, int value)
+void Karaoke::setEchoValue(int value)
 {
-    switch (effectType)
-    {
-        case 1:
-            echo->setMix(value / 100.0f);
-            return;
-        case 2:
-            reverb->mix = value / 100.0f;
-            return;
-    }
+    echo->setMix(value / 100.0f);
+}
+
+void Karaoke::setReverbValue(int value)
+{
+    reverb->mix = value / 100.0f;
 }
 
 void Karaoke::setMicVolume(float value)
 {
     micVolume = sinf(value) * MIC_MAX_VOLUME;
-
 }
 
 void Karaoke::stopRecord()
