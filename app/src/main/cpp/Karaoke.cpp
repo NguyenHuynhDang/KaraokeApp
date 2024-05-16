@@ -28,7 +28,7 @@ Karaoke::Karaoke(unsigned int samplerate, unsigned int bufferSize)
             true,   // enable output
             audioProcessing,    // audio callback function
             this,   // client data
-            SL_ANDROID_STREAM_SYSTEM,   // input stream type
+            SL_ANDROID_STREAM_VOICE,   // input stream type
             SL_ANDROID_RECORDING_PRESET_VOICE_RECOGNITION
             ); // output stream type
 

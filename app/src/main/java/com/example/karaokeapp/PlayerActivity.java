@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.Toast;
 
@@ -19,13 +20,15 @@ import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView;
 
-public class PlayerActivity extends AppCompatActivity {
+public class PlayerActivity extends AppCompatActivity implements SeekBar.OnSeekBarChangeListener {
     boolean hasAllPermissions = false;
     private Boolean isRecording = false;
     private RecorderService recorderService;
 
     private Switch micSwitch, effectSwitch;
     private View micView, effectView;
+    private SeekBar micVolumeSb;
+    private SeekBar echoSb, reverbSb;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,6 +61,7 @@ public class PlayerActivity extends AppCompatActivity {
         setRecorderService();
         setMicSwitchClick();
         setEffectSwitchClick();
+        setSeekbarListener();
 
         if (hasAllPermissions)
         {
@@ -105,6 +109,9 @@ public class PlayerActivity extends AppCompatActivity {
         effectSwitch = findViewById(R.id.sw_effect);
         micView = findViewById(R.id.view_mic);
         effectView = findViewById(R.id.view_effect);
+        micVolumeSb = findViewById(R.id.sb_micVolume);
+        echoSb = findViewById(R.id.sb_echo);
+        reverbSb = findViewById(R.id.sb_reverb);
     }
 
     private void setMicSwitchClick()
@@ -116,6 +123,7 @@ public class PlayerActivity extends AppCompatActivity {
                 micView.setVisibility(View.VISIBLE);
                 effectSwitch.setVisibility(View.VISIBLE);
                 recorderService.startRecording();
+                recorderService.setMicVolume(micVolumeSb.getProgress());
             }
             else
             {
@@ -128,19 +136,31 @@ public class PlayerActivity extends AppCompatActivity {
 
     private void setEffectSwitchClick()
     {
-        effectSwitch.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (effectSwitch.isChecked())
-                {
-                    effectView.setVisibility(View.VISIBLE);
-                }
-                else
-                {
-                    effectView.setVisibility(View.GONE);
-                }
+        effectSwitch.setOnClickListener(v -> {
+            recorderService.setEffectEnable(effectSwitch.isChecked());
+            if (effectSwitch.isChecked())
+            {
+                effectView.setVisibility(View.VISIBLE);
+                setEffectValue();
+            }
+            else
+            {
+                effectView.setVisibility(View.GONE);
             }
         });
+    }
+
+    private void setEffectValue()
+    {
+        recorderService.setEffectValue(1, echoSb.getProgress());
+        recorderService.setEffectValue(2, reverbSb.getProgress());
+    }
+
+    private void setSeekbarListener()
+    {
+        micVolumeSb.setOnSeekBarChangeListener(this);
+        echoSb.setOnSeekBarChangeListener(this);
+        reverbSb.setOnSeekBarChangeListener(this);
     }
 
     private void setRecorderService()
@@ -168,4 +188,28 @@ public class PlayerActivity extends AppCompatActivity {
         YouTubePlayerView youTubePlayerView = findViewById(R.id.youtube_player);
         youTubePlayerView.release();
     }
+
+    @Override
+    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+        if (seekBar.equals(micVolumeSb))
+        {
+            recorderService.setMicVolume(micVolumeSb.getProgress());
+            return;
+        }
+        if (seekBar.equals(echoSb))
+        {
+            recorderService.setEffectValue(1, echoSb.getProgress());
+            return;
+        }
+        if (seekBar == reverbSb)
+        {
+            recorderService.setEffectValue(2, reverbSb.getProgress());
+        }
+    }
+
+    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {}
+
+    @Override
+    public void onStopTrackingTouch(SeekBar seekBar) {}
 }
