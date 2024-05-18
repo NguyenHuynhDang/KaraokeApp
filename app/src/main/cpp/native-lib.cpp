@@ -8,7 +8,7 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_karaokeapp_RecorderService_Recorder(JNIEnv *env, jobject thiz, jint samplerate,
                                                      jint buffersize) {
-    karaoke = new Karaoke((unsigned int)samplerate, (unsigned int)buffersize);
+    karaoke = std::make_unique<Karaoke>((unsigned int)samplerate, (unsigned int)buffersize);
 }
 
 extern "C"
@@ -27,6 +27,14 @@ Java_com_example_karaokeapp_RecorderService_setEffectEnable(JNIEnv *env, jobject
     if (karaoke) karaoke->setEffectEnable(value);
     __android_log_print(ANDROID_LOG_DEBUG, TAG, "set effect enable = %d", value);
 }
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_karaokeapp_RecorderService_setAutotuneEnable(JNIEnv *env, jobject thiz,
+                                                              jboolean value) {
+    if (karaoke) karaoke->setAutotuneEnable(value);
+}
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_karaokeapp_RecorderService_setEffectValue(JNIEnv *env, jobject thiz,

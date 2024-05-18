@@ -2,14 +2,17 @@ package com.example.karaokeapp;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -18,14 +21,21 @@ import androidx.core.content.ContextCompat;
 import com.google.android.material.textview.MaterialTextView;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener;
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.FullscreenListener;
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.YouTubePlayerListener;
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.options.IFramePlayerOptions;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView;
+
+import kotlin.Unit;
+import kotlin.jvm.functions.Function0;
 
 public class PlayerActivity extends AppCompatActivity implements SeekBar.OnSeekBarChangeListener {
     boolean hasAllPermissions = false;
-    private Boolean isRecording = false;
+    boolean isFullScreen = false;
     private RecorderService recorderService;
 
-    private Switch micSwitch, effectSwitch;
+    private YouTubePlayer youtubePlayer;
+    private Switch micSwitch, effectSwitch, autotuneSwitch;
     private View micView, effectView;
     private SeekBar micVolumeSb;
     private SeekBar echoSb, reverbSb;
@@ -33,44 +43,37 @@ public class PlayerActivity extends AppCompatActivity implements SeekBar.OnSeekB
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-//        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_player);
-//        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-//            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-//            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-//            return insets;
-//        });
 
-        // Checking permissions.
-        String[] permissions = {
-                Manifest.permission.RECORD_AUDIO,
-        };
-        for (String s : permissions) {
-            if (ContextCompat.checkSelfPermission(this, s) != PackageManager.PERMISSION_GRANTED) {
-                // Some permissions are not granted, ask the user.
-                ActivityCompat.requestPermissions(this, permissions, 0);
-                return;
+        hasAllPermissions = checkPermission();
+        if (!hasAllPermissions) return;
+
+        getOnBackPressedDispatcher().addCallback(new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (isFullScreen) {
+                    // if the player is in fullscreen, exit fullscreen
+                    youtubePlayer.toggleFullscreen();
+                } else {
+                    finish();
+                }
             }
-        }
-        // Got all permissions
-        hasAllPermissions = true;
+        });
 
         setupView();
         setYoutubePlayer();
         setRecorderService();
         setMicSwitchClick();
         setEffectSwitchClick();
+        setAutotuneSwitchClick();
         setSeekbarListener();
 
-        if (hasAllPermissions)
-        {
-            isRecording = true;
-            micSwitch.setChecked(true);
-            micView.setVisibility(View.VISIBLE);
-            effectSwitch.setVisibility(View.VISIBLE);
-            recorderService.startRecording();
-        }
+        // start record
+        micSwitch.setChecked(true);
+        micView.setVisibility(View.VISIBLE);
+        autotuneSwitch.setVisibility(View.VISIBLE);
+        effectSwitch.setVisibility(View.VISIBLE);
+        recorderService.startRecording();
     }
 
     @Override
@@ -86,16 +89,61 @@ public class PlayerActivity extends AppCompatActivity implements SeekBar.OnSeekB
         }
     }
 
+    private boolean checkPermission()
+    {
+        String[] permissions = {
+                Manifest.permission.RECORD_AUDIO,
+        };
+        for (String s : permissions) {
+            if (ContextCompat.checkSelfPermission(this, s) != PackageManager.PERMISSION_GRANTED) {
+                // Some permissions are not granted, ask the user.
+                ActivityCompat.requestPermissions(this, permissions, 0);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private void setYoutubePlayer()
     {
         String videoId = getIntent().getStringExtra("videoId");
         String videoTitle = getIntent().getStringExtra("videoTitle");
 
         YouTubePlayerView youTubePlayerView = findViewById(R.id.youtube_player);
-        youTubePlayerView.addYouTubePlayerListener(new AbstractYouTubePlayerListener() {
+        FrameLayout fullscreenViewContainer = findViewById(R.id.full_screen_view_container);
+
+                getLifecycle().addObserver(youTubePlayerView);
+        YouTubePlayerListener listener = new AbstractYouTubePlayerListener() {
             @Override
             public void onReady(@NonNull YouTubePlayer youTubePlayer) {
+                youtubePlayer = youTubePlayer;
                 youTubePlayer.loadVideo(videoId, 0);
+            }
+        };
+        IFramePlayerOptions options = new IFramePlayerOptions.Builder().controls(1).fullscreen(1).build();
+        youTubePlayerView.initialize(listener, options);
+
+        youTubePlayerView.addFullscreenListener(new FullscreenListener() {
+            @Override
+            public void onEnterFullscreen(@NonNull View fullscreenView, @NonNull Function0<Unit> function0) {
+                isFullScreen = true;
+
+                youTubePlayerView.setVisibility(View.GONE);
+                fullscreenViewContainer.setVisibility(View.VISIBLE);
+                fullscreenViewContainer.addView(fullscreenView);
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+            }
+
+            @Override
+            public void onExitFullscreen() {
+                isFullScreen = false;
+
+                // the video will continue playing in the player
+                youTubePlayerView.setVisibility(View.VISIBLE);
+                fullscreenViewContainer.setVisibility(View.GONE);
+                fullscreenViewContainer.removeAllViews();
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
             }
         });
 
@@ -107,6 +155,7 @@ public class PlayerActivity extends AppCompatActivity implements SeekBar.OnSeekB
     {
         micSwitch = findViewById(R.id.sw_mic);
         effectSwitch = findViewById(R.id.sw_effect);
+        autotuneSwitch = findViewById(R.id.sw_autotune);
         micView = findViewById(R.id.view_mic);
         effectView = findViewById(R.id.view_effect);
         micVolumeSb = findViewById(R.id.sb_micVolume);
@@ -117,10 +166,16 @@ public class PlayerActivity extends AppCompatActivity implements SeekBar.OnSeekB
     private void setMicSwitchClick()
     {
         micSwitch.setOnClickListener(v -> {
-            isRecording = !isRecording;
-            if (isRecording)
+            if (micSwitch.isChecked() && !checkPermission())
+            {
+                micSwitch.setChecked(false);
+                return;
+            }
+
+            if (micSwitch.isChecked())
             {
                 micView.setVisibility(View.VISIBLE);
+                autotuneSwitch.setVisibility(View.VISIBLE);
                 effectSwitch.setVisibility(View.VISIBLE);
                 recorderService.startRecording();
                 recorderService.setMicVolume(micVolumeSb.getProgress());
@@ -128,7 +183,9 @@ public class PlayerActivity extends AppCompatActivity implements SeekBar.OnSeekB
             else
             {
                 micView.setVisibility(View.GONE);
+                autotuneSwitch.setVisibility(View.GONE);
                 effectSwitch.setVisibility(View.GONE);
+                effectView.setVisibility(View.GONE);
                 recorderService.stopRecording();
             }
         });
@@ -146,6 +203,16 @@ public class PlayerActivity extends AppCompatActivity implements SeekBar.OnSeekB
             else
             {
                 effectView.setVisibility(View.GONE);
+            }
+        });
+    }
+
+    private void setAutotuneSwitchClick()
+    {
+        autotuneSwitch.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                recorderService.setAutotuneEnable(autotuneSwitch.isChecked());
             }
         });
     }
@@ -182,11 +249,24 @@ public class PlayerActivity extends AppCompatActivity implements SeekBar.OnSeekB
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+        if (micSwitch.isChecked())
+            recorderService.stopRecording();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (micSwitch.isChecked())
+            recorderService.startRecording();
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
-        recorderService.stopRecording();
-        YouTubePlayerView youTubePlayerView = findViewById(R.id.youtube_player);
-        youTubePlayerView.release();
+        if (micSwitch.isChecked())
+            recorderService.stopRecording();
     }
 
     @Override

@@ -10,7 +10,6 @@
 #include <math.h>
 #include "Karaoke.h"
 
-const float MIC_MAX_VOLUME = 0.005f;
 
 bool audioProcessing(void* clientData, short int* audioIO, int numFrames, int sampleRate)
 {
@@ -29,8 +28,12 @@ Karaoke::Karaoke(unsigned int samplerate, unsigned int bufferSize)
             audioProcessing,    // audio callback function
             this,   // client data
             SL_ANDROID_STREAM_VOICE,   // input stream type
-            SL_ANDROID_RECORDING_PRESET_VOICE_RECOGNITION
-            ); // output stream type
+            SL_ANDROID_RECORDING_PRESET_VOICE_RECOGNITION    // output stream type
+            );
+
+    autotune = new Superpowered::AutomaticVocalPitchCorrection();
+    autotune->speed = Superpowered::AutomaticVocalPitchCorrection::EXTREME;
+    autotune->clamp = Superpowered::AutomaticVocalPitchCorrection::OFF;
 
     echo = new Superpowered::Echo((unsigned int)samplerate);
     echo->setMix(0.0f);
@@ -44,15 +47,21 @@ Karaoke::Karaoke(unsigned int samplerate, unsigned int bufferSize)
 bool Karaoke::process(short int *audio, unsigned int numFrames, unsigned int sampleRate)
 {
     float floatBuffer[numFrames * 2];
-    Superpowered::ShortIntToFloat(audio, floatBuffer, (unsigned int)numFrames);
-    Superpowered::ChangeVolumeAdd(floatBuffer, floatBuffer, 1.0f, micVolume, (unsigned int)numFrames);
+    Superpowered::ShortIntToFloat(audio, floatBuffer, numFrames);
+    Superpowered::Volume(floatBuffer, floatBuffer, micVolume, micVolume, numFrames);
 
-    if (isEffectEnable) {
-        echo->process(floatBuffer, floatBuffer, (unsigned int)numFrames);
-        reverb->process(floatBuffer, floatBuffer, (unsigned int)numFrames);
+    if (isAutotuneEnable)
+    {
+        autotune->samplerate = sampleRate;
+        autotune->process(floatBuffer, floatBuffer, true, numFrames);
     }
 
-    Superpowered::FloatToShortInt(floatBuffer, audio, (unsigned int)numFrames);
+    if (isEffectEnable) {
+        echo->process(floatBuffer, floatBuffer, numFrames);
+        reverb->process(floatBuffer, floatBuffer, numFrames);
+    }
+
+    Superpowered::FloatToShortInt(floatBuffer, audio, numFrames);
     return true;
 }
 
@@ -60,6 +69,11 @@ void Karaoke::setEffectEnable(bool value)
 {
     isEffectEnable = value;
     echo->enabled = reverb->enabled = value;
+}
+
+void Karaoke::setAutotuneEnable(bool value)
+{
+    isAutotuneEnable = value;
 }
 
 void Karaoke::setEchoValue(int value)
@@ -74,12 +88,29 @@ void Karaoke::setReverbValue(int value)
 
 void Karaoke::setMicVolume(float value)
 {
-    micVolume = sinf(value) * MIC_MAX_VOLUME;
+    micVolume = value;
 }
 
 void Karaoke::stopRecord()
 {
-    delete audioIO;
-    delete echo;
-    delete reverb;
+    if (audioIO)
+    {
+        delete audioIO;
+        audioIO = nullptr;
+    }
+    if (echo)
+    {
+        delete echo;
+        echo = nullptr;
+    }
+    if (reverb)
+    {
+        delete reverb;
+        reverb = nullptr;
+    }
+    if (autotune)
+    {
+        delete autotune;
+        autotune = nullptr;
+    }
 }

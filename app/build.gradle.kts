@@ -52,7 +52,7 @@ dependencies {
     implementation(libs.glide)
     implementation(libs.core)
     implementation(libs.converter.gson)
-    implementation("androidx.activity:activity:1.9.0")
+    implementation(libs.activity)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
