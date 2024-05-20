@@ -32,6 +32,6 @@ public:
     void stopRecord();
 };
 
-static std::unique_ptr<Karaoke> karaoke;
+static Karaoke* karaoke;
 
 #endif //KARAOKEAPP_KARAOKE_H

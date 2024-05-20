@@ -22,7 +22,7 @@ public class VideoViewModel extends ViewModel {
     public MutableLiveData<String> getMessage() { return _message; }
     private final String typeSearch = "video";
     private final String querySearch = "Karaoke";
-    private final int maxResult = 8;
+    private final int maxResult = 10;
 
 
     public VideoViewModel() {

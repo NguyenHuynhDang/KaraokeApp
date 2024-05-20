@@ -8,7 +8,7 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_karaokeapp_RecorderService_Recorder(JNIEnv *env, jobject thiz, jint samplerate,
                                                      jint buffersize) {
-    karaoke = std::make_unique<Karaoke>((unsigned int)samplerate, (unsigned int)buffersize);
+    karaoke = new Karaoke((unsigned int)samplerate, (unsigned int)buffersize);
 }
 
 extern "C"
