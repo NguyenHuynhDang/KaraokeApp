@@ -36,13 +36,12 @@ import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTube
 import kotlin.Unit;
 import kotlin.jvm.functions.Function0;
 
-public class PlayerActivity extends AppCompatActivity implements SeekBar.OnSeekBarChangeListener, View.OnTouchListener {
+public class PlayerActivity extends AppCompatActivity implements SeekBar.OnSeekBarChangeListener {
     boolean hasAllPermissions = false;
     boolean isHeadphoneConnected = false;
     boolean isFullScreen = false;
     private RecorderService recorderService;
 
-    private FloatingButton settingBtn = new FloatingButton();
     private ImageButton closeSettingBtn;
     private YouTubePlayer youtubePlayer;
     private TextView videoTitleTv;
@@ -148,9 +147,9 @@ public class PlayerActivity extends AppCompatActivity implements SeekBar.OnSeekB
             public void onEnterFullscreen(@NonNull View fullscreenView, @NonNull Function0<Unit> function0) {
                 isFullScreen = true;
 
-                //settingBtn.swapDimension();
                 youTubePlayerView.setVisibility(View.GONE);
                 videoTitleTv.setVisibility(View.GONE);
+                settingView.setVisibility(View.GONE);
                 fullscreenViewContainer.setVisibility(View.VISIBLE);
                 fullscreenViewContainer.addView(fullscreenView);
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
@@ -161,9 +160,9 @@ public class PlayerActivity extends AppCompatActivity implements SeekBar.OnSeekB
                 isFullScreen = false;
 
                 // the video will continue playing in the player
-                //settingBtn.swapDimension();
                 youTubePlayerView.setVisibility(View.VISIBLE);
                 videoTitleTv.setVisibility(View.VISIBLE);
+                settingView.setVisibility(View.VISIBLE);
                 fullscreenViewContainer.setVisibility(View.GONE);
                 fullscreenViewContainer.removeAllViews();
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
@@ -186,18 +185,6 @@ public class PlayerActivity extends AppCompatActivity implements SeekBar.OnSeekB
         micVolumeSb = findViewById(R.id.sb_micVolume);
         echoSb = findViewById(R.id.sb_echo);
         reverbSb = findViewById(R.id.sb_reverb);
-
-        closeSettingBtn = findViewById(R.id.closeSetting_btn);
-        closeSettingBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                settingView.setVisibility(View.GONE);
-                settingBtn.floatingBtn.setVisibility(View.VISIBLE);
-            }
-        });
-
-        settingBtn.floatingBtn = findViewById(R.id.setting_btn);
-        settingBtn.floatingBtn.setOnTouchListener(this);
     }
 
     private void setMicSwitchClick()
@@ -371,93 +358,4 @@ public class PlayerActivity extends AppCompatActivity implements SeekBar.OnSeekB
 
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {}
-
-    @Override
-    public boolean onTouch(View view, MotionEvent motionEvent) {
-        ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams)view.getLayoutParams();
-
-        int action = motionEvent.getAction();
-        if (action == MotionEvent.ACTION_DOWN) {
-
-            settingBtn.downRawX = motionEvent.getRawX();
-            settingBtn.downRawY = motionEvent.getRawY();
-            settingBtn.dX = view.getX() - settingBtn.downRawX;
-            settingBtn.dY = view.getY() - settingBtn.downRawY;
-
-            return true; // Consumed
-
-        }
-        else if (action == MotionEvent.ACTION_MOVE) {
-
-            int viewWidth = view.getWidth();
-            int viewHeight = view.getHeight();
-
-            View viewParent = (View)view.getParent();
-            int parentWidth = viewParent.getWidth();
-            int parentHeight = viewParent.getHeight();
-
-            float newX = motionEvent.getRawX() + settingBtn.dX;
-            newX = Math.max(layoutParams.leftMargin, newX); // Don't allow the FAB past the left hand side of the parent
-            newX = Math.min(parentWidth - viewWidth - layoutParams.rightMargin, newX); // Don't allow the FAB past the right hand side of the parent
-
-            float newY = motionEvent.getRawY() + settingBtn.dY;
-            newY = Math.max(layoutParams.topMargin, newY); // Don't allow the FAB past the top of the parent
-            newY = Math.min(parentHeight - viewHeight - layoutParams.bottomMargin, newY); // Don't allow the FAB past the bottom of the parent
-
-            view.animate()
-                    .x(newX)
-                    .y(newY)
-                    .setDuration(0)
-                    .start();
-
-            return true; // Consumed
-
-        }
-        else if (action == MotionEvent.ACTION_UP) {
-
-            float upRawX = motionEvent.getRawX();
-            float upRawY = motionEvent.getRawY();
-
-            float upDX = upRawX - settingBtn.downRawX;
-            float upDY = upRawY - settingBtn.downRawY;
-
-            // Consumed
-            if (Math.abs(upDX) < settingBtn.CLICK_DRAG_TOLERANCE && Math.abs(upDY) < settingBtn.CLICK_DRAG_TOLERANCE) { // A click
-                //perform click
-                // Perform click
-                if (settingView.getVisibility() == View.GONE)
-                {
-                    settingView.setVisibility(View.VISIBLE);
-                    settingBtn.floatingBtn.setVisibility(View.GONE);
-                }
-            }
-            // A drag
-
-            return true;
-
-        }
-        else {
-            return super.onTouchEvent(motionEvent);
-        }
-
-    }
-
-    private static class FloatingButton
-    {
-        private FloatingActionButton floatingBtn;
-        private final static float CLICK_DRAG_TOLERANCE = 10; // Often, there will be a slight, unintentional, drag when the user taps the FAB, so we need to account for this.
-        private float downRawX, downRawY;
-        private float dX, dY;
-
-        private void swapDimension()
-        {
-            float temp = dX;
-            dX = dY;
-            dY = temp;
-
-            temp = downRawX;
-            downRawX = downRawY;
-            downRawY = temp;
-        }
-    }
 }
