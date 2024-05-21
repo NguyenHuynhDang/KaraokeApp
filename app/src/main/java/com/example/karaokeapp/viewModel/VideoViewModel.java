@@ -21,15 +21,18 @@ public class VideoViewModel extends ViewModel {
     private final MutableLiveData<String> _message = new MutableLiveData<>();
     public MutableLiveData<String> getMessage() { return _message; }
     private final String typeSearch = "video";
-    private final String querySearch = "Karaoke";
+    private String querySearch = "Karaoke";
     private final int maxResult = 10;
 
+    public void setQuerySearch(String querySearch) {
+        this.querySearch = querySearch;
+    }
 
     public VideoViewModel() {
         getVideoList();
     }
 
-    private void getVideoList()
+    public void getVideoList()
     {
         _isLoading.setValue(true);
         Call<VideoData> client = ApiConfig.getService().getVideo("snippet", typeSearch, maxResult, querySearch);
@@ -56,30 +59,5 @@ public class VideoViewModel extends ViewModel {
                 _message.setValue(throwable.getMessage());
             }
         });
-    }
-
-    private void setVideoDetails(VideoData data)
-    {
-        if (_video == null) return;
-
-        for (int i = 0; i < data.getItems().size(); i++)
-        {
-            Call<VideoItem> client = ApiConfig.getService().getVideoDetails("contentDetails", data.getItems().get(i).getId().getId());
-            int index = i;
-            client.enqueue(new Callback<VideoItem>() {
-                @Override
-                public void onResponse(@NonNull Call<VideoItem> call, @NonNull Response<VideoItem> response) {
-                    if (response.isSuccessful() && response.body() != null)
-                    {
-                        data.setItemAt(index, response.body());
-                    }
-                }
-
-                @Override
-                public void onFailure(@NonNull Call<VideoItem> call, @NonNull Throwable throwable) {
-                    return;
-                }
-            });
-        }
     }
 }
