@@ -46,6 +46,12 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.ViewHolder>
         result.dispatchUpdatesTo(this);
     }
 
+    public void clearAll()
+    {
+        videoItems.clear();
+        notifyDataSetChanged();
+    }
+
     public static class ViewHolder extends RecyclerView.ViewHolder
     {
         private final VideoItemBinding binding;
