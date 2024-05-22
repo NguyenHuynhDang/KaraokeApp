@@ -48,7 +48,8 @@ bool Karaoke::process(short int *audio, unsigned int numFrames, unsigned int sam
 {
     float floatBuffer[numFrames * 2];
     Superpowered::ShortIntToFloat(audio, floatBuffer, numFrames);
-    Superpowered::Volume(floatBuffer, floatBuffer, micVolume, micVolume, numFrames);
+    Superpowered::Volume(floatBuffer, floatBuffer, premicVol, micVolume, numFrames);
+    premicVol = micVolume;
 
     if (isAutotuneEnable)
     {

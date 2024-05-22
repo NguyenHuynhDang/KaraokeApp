@@ -16,6 +16,7 @@ class Karaoke
 private:
     bool isEffectEnable = false;
     bool isAutotuneEnable = false;
+    float premicVol = .0f;
     float micVolume = .0f;
     SuperpoweredAndroidAudioIO *audioIO;
     Superpowered::Echo *echo;

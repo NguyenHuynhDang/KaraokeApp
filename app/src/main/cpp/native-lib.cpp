@@ -17,6 +17,8 @@ Java_com_example_karaokeapp_RecorderService_stopRecording(JNIEnv *env, jobject t
     if (karaoke)
     {
         karaoke->stopRecord();
+        delete karaoke;
+        karaoke = nullptr;
         __android_log_print(ANDROID_LOG_DEBUG, "Karaoke", "Finished recording.");
     }
 }
@@ -44,12 +46,12 @@ Java_com_example_karaokeapp_RecorderService_setEffectValue(JNIEnv *env, jobject 
         switch (effect_type) {
             case 1:
                 karaoke->setEchoValue(value);
-                __android_log_print(ANDROID_LOG_DEBUG, TAG, "set echo = %d", value);
+                __android_log_print(ANDROID_LOG_DEBUG, TAG, "set echo = %f", value);
 
                 return;
             case 2:
                 karaoke->setReverbValue(value);
-                __android_log_print(ANDROID_LOG_DEBUG, TAG, "set reverb = %d", value);
+                __android_log_print(ANDROID_LOG_DEBUG, TAG, "set reverb = %f", value);
                 return;
         }
     }

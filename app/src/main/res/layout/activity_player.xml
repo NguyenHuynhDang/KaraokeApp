@@ -90,6 +90,7 @@
                     android:layout_width="240dp"
                     android:layout_height="wrap_content"
                     android:max="100"
+                    android:progress="15"
                     android:scrollIndicators="top"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
@@ -183,6 +184,8 @@
                         android:id="@+id/sb_reverb"
                         android:layout_width="240dp"
                         android:layout_height="wrap_content"
+                        android:max="100"
+                        android:progress="0"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toEndOf="@+id/tv_reverb"
                         app:layout_constraintTop_toTopOf="@id/tv_reverb" />
