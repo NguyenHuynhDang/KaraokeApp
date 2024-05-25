@@ -27,7 +27,7 @@ public class VideoDiffUtil extends DiffUtil.Callback {
 
     @Override
     public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-        return oldList.get(oldItemPosition).getId().getId().equals(newList.get(newItemPosition).getId().getId());
+        return oldList.get(oldItemPosition) == newList.get(newItemPosition);
     }
 
     @Override
