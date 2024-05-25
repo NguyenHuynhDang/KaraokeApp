@@ -9,7 +9,6 @@
 #include <SuperpoweredEcho.h>
 #include <SuperpoweredReverb.h>
 #include <SuperpoweredAutomaticVocalPitchCorrection.h>
-#include <memory>
 
 class Karaoke
 {
