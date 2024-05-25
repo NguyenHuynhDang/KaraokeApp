@@ -14,7 +14,7 @@ public class RecorderService {
         Recorder(samplerate, buffersize);
     }
 
-    public native void Recorder(int samplerate, int buffersize);
+    private native void Recorder(int samplerate, int buffersize);
     public native void setEffectEnable(boolean value);
     public native void setAutotuneEnable(boolean value);
     public native void setEffectValue(int effectType, int value);
